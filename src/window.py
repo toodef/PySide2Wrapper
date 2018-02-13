@@ -21,7 +21,6 @@ class Window:
         :param widget: Widget unit
         :return: None
         """
-
         self.get_current_layout().addWidget(widget)
 
     def add_widgets(self, widgets: [Widget]):
@@ -30,9 +29,8 @@ class Window:
         :param widgets: Widget units
         :return: None
         """
-
         for widget in widgets:
-            self.get_current_layout().addWidget(widget)
+            self.get_current_layout().addLayout(widget.get_layout())
 
     def start_horizontal(self):
         """

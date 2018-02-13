@@ -1,23 +1,59 @@
-from PySide2.QtWidgets import QLineEdit
+from PySide2.QtWidgets import QLineEdit, QVBoxLayout, QHBoxLayout, QLabel
+from PySide2.QtCore import QObject
 from abc import ABCMeta, abstractmethod
 
 
 class Widget(metaclass=ABCMeta):
-    def __init__(self):
-        pass
+    def __init__(self, instance:QObject):
+        self._layout = None
+        self._instance = instance
 
-    @abstractmethod
+    def get_layout(self):
+        """
+        Return layout of widget
+        :return: layout
+        @:rtype: QLayout
+        """
+        return self._layout
+
     def get_instance(self):
         """
         Get Qt instance of widget
         :return:
         """
+        return self._instance
+
+    def add_label(self, text:str, position:str):
+        """
+        Add label to widget
+        :param text: label text
+        :param position: position of label ['top', 'left', 'right', 'bottom']
+        :return: self value
+        """
+        if not (position in ['top', 'bottom', 'left', 'right']):
+            raise Exception("Wrong position for label: " + text)
+
+        if position in ['top', 'bottom']:
+            self._layout = QVBoxLayout()
+        elif position in ['left', 'right']:
+            self._layout = QHBoxLayout()
+
+        if position in ['top', 'left']:
+            self._layout.addWidget(QLabel(text))
+            self._layout.addWidget(self._instance)
+        elif position in ['bottom', 'top']:
+            self._layout.addWidget(self._instance)
+            self._layout.addWidget(QLabel(text))
+
+    @abstractmethod
+    def assembly(self):
+        """
+        Assembly object
+        :return: object instance
+        """
 
 
-class ValueContains(Widget, metaclass=ABCMeta):
-    def __init__(self):
-        super().__init__()
-
+class ValueContains(metaclass=ABCMeta):
     @abstractmethod
     def set_value(self, value):
         """
@@ -34,23 +70,22 @@ class ValueContains(Widget, metaclass=ABCMeta):
         """
 
 
-class LineEdit(Widget):
+class LineEdit(Widget, ValueContains):
     def __init__(self):
-        super().__init__()
-        self.__line_edit = QLineEdit()
+        super().__init__(QLineEdit())
 
-    def set_value(self, value):
+    def set_value(self, value:str):
         """
         Set value to
         :param value:
         :return:
         """
-        pass
+        self._instance.setText(value)
 
     def get_value(self):
         """
         Get current value
         :return: current value
         """
-        pass
+        self._instance.text()
 
