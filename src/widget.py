@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 
 
 class Widget(metaclass=ABCMeta):
-    def __init__(self, instance:QObject):
+    def __init__(self, instance: QObject):
         self._layout = None
         self._instance = instance
 
@@ -14,6 +14,7 @@ class Widget(metaclass=ABCMeta):
         :return: layout
         @:rtype: QLayout
         """
+        self._assembly()
         return self._layout
 
     def get_instance(self):
@@ -23,7 +24,7 @@ class Widget(metaclass=ABCMeta):
         """
         return self._instance
 
-    def add_label(self, text:str, position:str):
+    def add_label(self, text: str, position: str):
         """
         Add label to widget
         :param text: label text
@@ -45,8 +46,10 @@ class Widget(metaclass=ABCMeta):
             self._layout.addWidget(self._instance)
             self._layout.addWidget(QLabel(text))
 
+        return self
+
     @abstractmethod
-    def assembly(self):
+    def _assembly(self):
         """
         Assembly object
         :return: object instance
@@ -74,7 +77,7 @@ class LineEdit(Widget, ValueContains):
     def __init__(self):
         super().__init__(QLineEdit())
 
-    def set_value(self, value:str):
+    def set_value(self, value: str):
         """
         Set value to
         :param value:
@@ -89,3 +92,7 @@ class LineEdit(Widget, ValueContains):
         """
         self._instance.text()
 
+    def _assembly(self):
+        if self._layout is None:
+            self._layout = QVBoxLayout()
+            self._layout.addWidget(self._instance)

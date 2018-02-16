@@ -7,6 +7,7 @@ class Window:
         self.__widget = QWidget()
         self.__widget.setWindowTitle(title)
         self.__layouts = [QVBoxLayout()]
+        self.__widget.setLayout(self.__layouts[-1])
 
     def show(self):
         """
@@ -19,9 +20,10 @@ class Window:
         """
         Add widget to window layout
         :param widget: Widget unit
-        :return: None
+        :return: widget instance
         """
-        self.get_current_layout().addWidget(widget)
+        self.get_current_layout().addLayout(widget.get_layout())
+        return widget
 
     def add_widgets(self, widgets: [Widget]):
         """
