@@ -42,7 +42,7 @@ class Widget(metaclass=ABCMeta):
         if position in ['top', 'left']:
             self._layout.addWidget(QLabel(text))
             self._layout.addWidget(self._instance)
-        elif position in ['bottom', 'top']:
+        elif position in ['bottom', 'right']:
             self._layout.addWidget(self._instance)
             self._layout.addWidget(QLabel(text))
 
