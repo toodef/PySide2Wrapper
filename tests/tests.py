@@ -1,6 +1,6 @@
-from src.app import Application
-from src.window import MainWindow
-from src.widget import LineEdit, Button, ImageLayout
+from PySide2Wrapper.app import Application
+from PySide2Wrapper.window import MainWindow
+from PySide2Wrapper.widget import LineEdit, Button, ImageLayout
 
 
 def callback():
