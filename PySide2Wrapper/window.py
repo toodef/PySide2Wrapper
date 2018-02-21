@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QLayout, QVBoxLayout, QHBoxLayout, QWidget
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QGroupBox
 from .widget import Widget
 
 
@@ -64,7 +64,7 @@ class Window:
         self.add_widgets(widgets)
         self.cancel()
 
-    def group_vertical(self, widgets):
+    def group_vertical(self, widgets: [Widget]):
         """
         Place list of widgets vertical
         :param widgets: list of widgets
@@ -81,21 +81,28 @@ class Window:
         """
         return self.__layouts[-1]
 
-    def add_to_group_box(self, group_name: str, layout: QLayout):
+    def add_to_group_box(self, group_name: str, widgets: [Widget]):
         """
         Place layout to group box
         :param group_name: name of group
-        :param layout: layout, that been placed to group
+        :param widgets: list of widgets, that been placed to group
         :return: None
         """
-        pass
+        self.start_group_box(group_name)
+        for widget in widgets:
+            self.add_widget(widget)
+        self.cancel()
 
     def start_group_box(self, name: str):
         """
         Start group box
         :return:
         """
-        pass
+        group_box = QGroupBox(name)
+        group_box_layout = QVBoxLayout()
+        group_box.setLayout(group_box_layout)
+        self.get_current_layout().addWidget(group_box)
+        self.__layouts.append(group_box_layout)
 
     def cancel(self):
         """
