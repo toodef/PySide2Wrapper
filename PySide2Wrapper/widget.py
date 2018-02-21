@@ -1,18 +1,38 @@
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox
 from PySide2.QtGui import QPixmap, QImage
-from PySide2.QtCore import QObject, QRect
+from PySide2.QtCore import QObject
 from abc import ABCMeta, abstractmethod
+
+
+class Checkable(metaclass=ABCMeta):
+    @abstractmethod
+    def add_clicked_callback(self, callback: callable):
+        """
+        Add callback, that will call for every click
+        :param callback: callback
+        :return: Widget object
+        :rtype: Widget
+        """
+
+    @abstractmethod
+    def get_value(self):
+        """
+        Get state of Widget: checked or not
+        :return: State
+        :rtype: bool
+        """
 
 
 class Widget:
     def __init__(self, instance: QObject):
         self._layout = None
         self._instance = instance
+        self._enabled_dependencies = []
 
     def get_layout(self):
         """
         Return layout of widget
-        :return: layout
+        :return: layout, contains Widget instance
         @:rtype: QLayout
         """
         return self._layout
@@ -20,9 +40,30 @@ class Widget:
     def get_instance(self):
         """
         Get Qt instance of widget
-        :return:
+        :return: instance of widget (PySide object)
+        :rtype QWidget
         """
         return self._instance
+
+    def set_enabled(self, is_enabled: bool = True):
+        """
+        Set widget enabled
+        :param is_enabled: state of widget: enabled or not
+        :return: Widget object (self)
+        :rtype: Widget
+        """
+        if is_enabled:
+            for depends in self._enabled_dependencies:
+                if not depends.get_value():
+                    self._instance.setEnabled(False)
+                    return self
+        self._instance.setEnabled(is_enabled)
+        return self
+
+    def add_enabled_dependency(self, dependency: Checkable):
+        self.set_enabled(dependency.get_value())
+        self._enabled_dependencies.append(dependency)
+        dependency.add_clicked_callback(self.set_enabled)
 
 
 class LabeledWidget(Widget, metaclass=ABCMeta):
@@ -150,3 +191,17 @@ class ImageLayout(Widget):
 
     def get_size(self):
         return self.__pixmap.width(), self.__pixmap.height()
+
+
+class CheckBox(Widget, Checkable):
+    def __init__(self, title: str):
+        super().__init__(QCheckBox(title))
+        self._layout = QVBoxLayout()
+        self._layout.addWidget(self._instance)
+
+    def add_clicked_callback(self, callback: callable):
+        self._instance.toggled.connect(callback)
+        return self
+
+    def get_value(self):
+        return self._instance.isChecked()
