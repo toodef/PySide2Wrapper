@@ -1,4 +1,5 @@
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
+    QComboBox
 from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtCore import QObject
 from abc import ABCMeta, abstractmethod
@@ -205,3 +206,44 @@ class CheckBox(Widget, Checkable):
 
     def get_value(self):
         return self._instance.isChecked()
+
+
+class RadioButton(Widget, Checkable):
+    def __init__(self, title: str):
+        super().__init__(QRadioButton(title))
+        self._layout = QVBoxLayout()
+        self._layout.addWidget(self._instance)
+
+    def get_value(self):
+        return self._instance.isChecked()
+
+    def add_clicked_callback(self, callback: callable):
+        self._instance.toggled.connect(callback)
+        return self
+
+
+class ComboBox(LabeledWidget, ValueContains):
+    def __init__(self):
+        super().__init__(QComboBox())
+
+    def _assembly(self):
+        if self._layout is None:
+            self._layout = QVBoxLayout()
+            self._layout.addWidget(self._instance)
+
+    def add_items(self, values: []):
+        """
+        Add values to combo box
+        @param values: list of values
+        @return: self instance
+        """
+        for v in values:
+            self._instance.addItem(v)
+
+        return self
+
+    def set_value(self, value: int):
+        self._instance.setCurrentIndex(value)
+
+    def get_value(self):
+        return self._instance.currentIndex()
