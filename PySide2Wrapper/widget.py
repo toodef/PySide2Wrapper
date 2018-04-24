@@ -1,5 +1,5 @@
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
-    QComboBox
+    QComboBox, QProgressBar
 from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtCore import QObject
 from abc import ABCMeta, abstractmethod
@@ -247,3 +247,16 @@ class ComboBox(LabeledWidget, ValueContains):
 
     def get_value(self):
         return self._instance.currentIndex()
+
+
+class ProgressBar(Widget, ValueContains):
+    def __init__(self):
+        super().__init__(QProgressBar())
+        self._layout = QVBoxLayout()
+        self._layout.addWidget(self._instance)
+
+    def set_value(self, value: int):
+        self._instance.setValue(value)
+
+    def get_value(self):
+        return self._instance.getValue()
