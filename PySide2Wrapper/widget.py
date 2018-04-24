@@ -1,5 +1,5 @@
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
-    QComboBox, QProgressBar
+    QComboBox, QProgressBar, QTableWidget, QTableView, QHeaderView, QTableWidgetItem
 from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtCore import QObject
 from abc import ABCMeta, abstractmethod
@@ -260,3 +260,23 @@ class ProgressBar(Widget, ValueContains):
 
     def get_value(self):
         return self._instance.getValue()
+
+
+class Table(Widget):
+    def __init__(self):
+        super().__init__(QTableWidget())
+        self._instance.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self._layout = QVBoxLayout()
+        self._layout.addWidget(self._instance)
+
+    def add_row(self, items: []):
+        row_idx = self._instance.rowCount()
+        self._instance.setRowCount(row_idx + 1)
+        for i, item in enumerate(items):
+            self._instance.setItem(row_idx, i, QTableWidgetItem(item))
+        return self
+
+    def set_columns_headers(self, headers: []):
+        self._instance.setColumnCount(len(headers))
+        self._instance.setHorizontalHeaderLabels(headers)
+        return self

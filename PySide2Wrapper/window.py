@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QGroupBox, QDialog, QWidget
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QGroupBox, QDialog, QWidget, QLabel
 from .widget import Widget
 
 
@@ -9,7 +9,7 @@ class AbstractWindow(metaclass=ABCMeta):
         self._widget = widget
         self._widget.setWindowTitle(title)
         self.__layouts = [QVBoxLayout()]
-        self._widget.setLayout(self.__layouts[-1])
+        self._widget.setLayout(self.get_current_layout())
 
     @abstractmethod
     def show(self):
@@ -43,8 +43,9 @@ class AbstractWindow(metaclass=ABCMeta):
         """
         if isinstance(self.get_current_layout(), QHBoxLayout):
             return
-
-        self.__layouts.append(QHBoxLayout())
+        layout = QHBoxLayout()
+        self.get_current_layout().addLayout(layout)
+        self.__layouts.append(layout)
 
     def start_vertical(self):
         """
@@ -53,8 +54,9 @@ class AbstractWindow(metaclass=ABCMeta):
         """
         if isinstance(self.get_current_layout(), QVBoxLayout):
             return
-
-        self.__layouts.append(QVBoxLayout())
+        layout = QVBoxLayout()
+        self.get_current_layout().addLayout(layout)
+        self.__layouts.append(layout)
 
     def group_horizontal(self, widgets: list):
         """
@@ -112,6 +114,14 @@ class AbstractWindow(metaclass=ABCMeta):
         :return: None
         """
         del self.__layouts[-1]
+
+    def get_instance(self):
+        return self._widget
+
+    def insert_text_label(self, text, is_link=False):
+        widget = QLabel(text)
+        widget.setOpenExternalLinks(is_link)
+        self.get_current_layout().addWidget(widget)
 
 
 class Window(AbstractWindow):
