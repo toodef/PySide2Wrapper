@@ -143,7 +143,7 @@ class LineEdit(LabeledWidget, ValueContains):
         Get current value
         :return: current value
         """
-        self._instance.text()
+        return self._instance.text()
 
     def _assembly(self):
         if self._layout is None:

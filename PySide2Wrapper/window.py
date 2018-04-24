@@ -1,20 +1,22 @@
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QGroupBox
+from abc import ABCMeta, abstractmethod
+
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QGroupBox, QDialog, QWidget
 from .widget import Widget
 
 
-class Window:
-    def __init__(self, title: str = ""):
-        self.__widget = QWidget()
-        self.__widget.setWindowTitle(title)
+class AbstractWindow(metaclass=ABCMeta):
+    def __init__(self, title: str, widget: QWidget):
+        self._widget = widget
+        self._widget.setWindowTitle(title)
         self.__layouts = [QVBoxLayout()]
-        self.__widget.setLayout(self.__layouts[-1])
+        self._widget.setLayout(self.__layouts[-1])
 
+    @abstractmethod
     def show(self):
         """
         Show this window
         :return:
         """
-        self.__widget.show()
 
     def add_widget(self, widget: Widget):
         """
@@ -112,9 +114,17 @@ class Window:
         del self.__layouts[-1]
 
 
-class MainWindow(Window):
+class Window(AbstractWindow):
     def __init__(self, title: str=""):
-        super().__init__(title)
+        super().__init__(title, QDialog())
+
+    def show(self):
+        self._widget.exec_()
+
+
+class MainWindow(AbstractWindow):
+    def __init__(self, title: str=""):
+        super().__init__(title, QWidget())
 
     @staticmethod
     def add_subwindow(title: str):
@@ -125,3 +135,6 @@ class MainWindow(Window):
         @rtype Window
         """
         return Window(title)
+
+    def show(self):
+        self._widget.show()
