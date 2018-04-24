@@ -123,6 +123,9 @@ class AbstractWindow(metaclass=ABCMeta):
         widget.setOpenExternalLinks(is_link)
         self.get_current_layout().addWidget(widget)
 
+    def close(self):
+        self._widget.close()
+
 
 class Window(AbstractWindow):
     def __init__(self, title: str=""):
