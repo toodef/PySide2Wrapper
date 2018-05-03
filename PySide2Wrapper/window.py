@@ -115,6 +115,15 @@ class AbstractWindow(metaclass=ABCMeta):
         """
         del self.__layouts[-1]
 
+    def add_subwindow(self, title: str):
+        """
+        Create subwindow
+        :param title: window title
+        :return: window
+        @rtype Window
+        """
+        return Window(title, self._widget)
+
     def get_instance(self):
         return self._widget
 
@@ -128,8 +137,8 @@ class AbstractWindow(metaclass=ABCMeta):
 
 
 class Window(AbstractWindow):
-    def __init__(self, title: str=""):
-        super().__init__(title, QDialog())
+    def __init__(self, title: str="", parent=None):
+        super().__init__(title, QDialog(parent))
 
     def show(self):
         self._widget.exec_()
@@ -138,16 +147,6 @@ class Window(AbstractWindow):
 class MainWindow(AbstractWindow):
     def __init__(self, title: str=""):
         super().__init__(title, QWidget())
-
-    @staticmethod
-    def add_subwindow(title: str):
-        """
-        Create subwindow
-        :param title: window title
-        :return: window
-        @rtype Window
-        """
-        return Window(title)
 
     def show(self):
         self._widget.show()

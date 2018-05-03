@@ -1,1 +1,1 @@
-from PySide2Wrapper.PySide2Wrapper import widget, window, app
+from .PySide2Wrapper import widget, window, app
