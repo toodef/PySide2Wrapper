@@ -1,5 +1,5 @@
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
-    QComboBox, QProgressBar, QTableWidget, QTableView, QHeaderView, QTableWidgetItem
+    QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog
 from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtCore import QObject
 from abc import ABCMeta, abstractmethod
@@ -280,3 +280,41 @@ class Table(Widget):
         self._instance.setColumnCount(len(headers))
         self._instance.setHorizontalHeaderLabels(headers)
         return self
+
+
+class OpenFile(Widget, ValueContains):
+    def __init__(self, label: str):
+        super().__init__(QFileDialog())
+        self._layout = QVBoxLayout()
+        self._layout.addWidget(QLabel(label))
+        self.__line_edit = LineEdit()
+        h_layout = QHBoxLayout()
+        h_layout.addLayout(self.__line_edit.get_layout())
+        self.__button = Button("File").set_on_click_callback(self.__open_file)
+        h_layout.addLayout(self.__button.get_layout())
+        self._layout.addLayout(h_layout)
+
+        self.__default_path = ""
+        self.__files_types = ""
+
+    def set_default_path(self, default_path: str):
+        self.__default_path = default_path
+        return self
+
+    def set_files_types(self, types: str):
+        self.__files_types = types
+        return self
+
+    def get_value(self):
+        res = self.__line_edit.get_value()
+        return None if len(res) < 1 else res
+
+    def set_value(self, value):
+        self.__line_edit.set_value(value)
+
+    def __open_file(self):
+        res = self._instance.getOpenFileName(caption="Open File", dir=self.__default_path, filter=self.__files_types)[0]
+        if len(res) < 1:
+            return
+
+        self.set_value(res)
