@@ -1,15 +1,39 @@
 from abc import ABCMeta, abstractmethod
 
-from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QGroupBox, QDialog, QWidget, QLabel
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QGroupBox, QDialog, QWidget, QLabel, QDockWidget, \
+    QScrollArea
 from .widget import Widget
 
 
 class AbstractWindow(metaclass=ABCMeta):
-    def __init__(self, title: str, widget: QWidget):
+    def __init__(self, title: str, widget: QWidget, enable_scrolling: bool=False):
         self._widget = widget
+
+        if enable_scrolling:
+            self.__scroll = QScrollArea(self._widget)
+
+            self._viewport = QWidget(self.__scroll)
+            self.__layout = QVBoxLayout(self._viewport)
+            self.__layout.setMargin(0)
+            self.__layout.setSpacing(0)
+            self._viewport.setLayout(self.__layout)
+
+            self.__scroll.setWidget(self._viewport)
+            self.__scroll.setWidgetResizable(True)
+
+            self._widget.setWidget(self.__scroll)
+
+            self.__layouts = [self.__layout]
+            self._window_layout = QVBoxLayout(self._widget)
+            self._window_layout.setMargin(0)
+            self._window_layout.setSpacing(0)
+            self._widget.setLayout(self._window_layout)
+        else:
+            self.__layouts = [QVBoxLayout()]
+            self._widget.setLayout(self.get_current_layout())
+
         self._widget.setWindowTitle(title)
-        self.__layouts = [QVBoxLayout()]
-        self._widget.setLayout(self.get_current_layout())
 
     @abstractmethod
     def show(self):
@@ -137,16 +161,35 @@ class AbstractWindow(metaclass=ABCMeta):
 
 
 class Window(AbstractWindow):
-    def __init__(self, title: str="", parent=None):
+    def __init__(self, title: str = "", parent=None):
         super().__init__(title, QDialog(parent))
+        self._widget.setWindowFlags(self._widget.windowFlags() & (~Qt.WindowContextHelpButtonHint))
 
     def show(self):
         self._widget.exec_()
 
 
 class MainWindow(AbstractWindow):
-    def __init__(self, title: str=""):
+    def __init__(self, title: str = ""):
         super().__init__(title, QWidget())
+
+    def show(self):
+        self._widget.show()
+
+
+class DockWidget(AbstractWindow):
+    def __init__(self, title: str, parent):
+        super().__init__(title, QDockWidget(parent), True)
+        parent.addDockWidget(Qt.LeftDockWidgetArea, self._widget)
+        self.__parent = parent
+        self._widget.show()
+
+    def tabify(self, dock: QDockWidget):
+        """
+        Align dock widget with existing
+        :param dock: dock widget
+        """
+        self.__parent.tabifyDockWidget(dock, self._widget)
 
     def show(self):
         self._widget.show()
