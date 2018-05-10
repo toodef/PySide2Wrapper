@@ -48,7 +48,9 @@ class AbstractWindow(metaclass=ABCMeta):
         :param widget: Widget unit
         :return: widget instance
         """
+        self.get_current_layout().addStretch()
         self.get_current_layout().addLayout(widget.get_layout())
+        self.get_current_layout().addStretch()
         return widget
 
     def add_widgets(self, widgets: [Widget]):
