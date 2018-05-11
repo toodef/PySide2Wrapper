@@ -1,3 +1,5 @@
+import time
+
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
     QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog
 from PySide2.QtGui import QPixmap, QImage
@@ -255,8 +257,13 @@ class ProgressBar(Widget, ValueContains):
         self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
 
-    def set_value(self, value: int):
+        self.__status = QLabel()
+        self._layout.addWidget(self.__status)
+
+    def set_value(self, value: int, status: str = ""):
         self._instance.setValue(value)
+        self.__status.setText(status)
+        time.sleep(0.01)  # TODO: i do not why, but without this app was failed
 
     def get_value(self):
         return self._instance.getValue()
