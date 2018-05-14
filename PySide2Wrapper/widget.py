@@ -283,6 +283,11 @@ class Table(Widget):
             self._instance.setItem(row_idx, i, QTableWidgetItem(item))
         return self
 
+    def del_row(self):
+        current_row = self._instance.currentRow()
+        self._instance.removeRow(current_row)
+        return self
+
     def set_columns_headers(self, headers: []):
         self._instance.setColumnCount(len(headers))
         self._instance.setHorizontalHeaderLabels(headers)
