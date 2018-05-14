@@ -1,9 +1,7 @@
-import time
-
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
     QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog
 from PySide2.QtGui import QPixmap, QImage
-from PySide2.QtCore import QObject
+from PySide2.QtCore import QObject, Signal
 from abc import ABCMeta, abstractmethod
 
 
@@ -252,6 +250,15 @@ class ComboBox(LabeledWidget, ValueContains):
 
 
 class ProgressBar(Widget, ValueContains):
+    class Instance(QObject):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+        value_changed = Signal(int, str)
+
+        def set_value(self, value: int, status: str = ""):
+            self.value_changed.emit(value, status)
+
     def __init__(self):
         super().__init__(QProgressBar())
         self._layout = QVBoxLayout()
@@ -260,13 +267,18 @@ class ProgressBar(Widget, ValueContains):
         self.__status = QLabel()
         self._layout.addWidget(self.__status)
 
+        self.__InstanceCls = self.Instance()
+        self.__InstanceCls.value_changed.connect(self.__set_value)
+        
     def set_value(self, value: int, status: str = ""):
-        self._instance.setValue(value)
-        self.__status.setText(status)
-        time.sleep(0.01)  # TODO: i do not why, but without this app was failed
+        self.__InstanceCls.value_changed.emit(value, status)
 
     def get_value(self):
         return self._instance.getValue()
+
+    def __set_value(self, value: int, status: str = ""):
+        self._instance.setValue(value)
+        self.__status.setText(status)
 
 
 class Table(Widget):
