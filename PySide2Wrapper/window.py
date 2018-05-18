@@ -263,8 +263,8 @@ class DoubleProgressWindow(Window):
     def __init__(self, title: str):
         super().__init__(title)
 
-        self.__pbar = self.add_widget(ProgressBar())
         self.__overall_pbar = self.add_widget(ProgressBar())
+        self.__pbar = self.add_widget(ProgressBar())
         self.__btn = self.add_widget(Button("Cancel")).set_on_click_callback(lambda: self.close())
 
     def show(self):
