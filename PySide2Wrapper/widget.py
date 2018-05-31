@@ -1,7 +1,7 @@
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
     QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog
 from PySide2.QtGui import QPixmap, QImage
-from PySide2.QtCore import QObject, Signal
+from PySide2.QtCore import QObject, Signal, QDir
 from abc import ABCMeta, abstractmethod
 
 
@@ -269,7 +269,7 @@ class ProgressBar(Widget, ValueContains):
 
         self.__InstanceCls = self.Instance()
         self.__InstanceCls.value_changed.connect(self.__set_value)
-        
+
     def set_value(self, value: int, status: str = ""):
         self.__InstanceCls.value_changed.emit(value, status)
 
@@ -306,28 +306,26 @@ class Table(Widget):
         return self
 
 
-class OpenFile(Widget, ValueContains):
-    def __init__(self, label: str):
+class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
+    def __init__(self, label: str, button_label: str):
         super().__init__(QFileDialog())
         self._layout = QVBoxLayout()
         self._layout.addWidget(QLabel(label))
         self.__line_edit = LineEdit()
         h_layout = QHBoxLayout()
         h_layout.addLayout(self.__line_edit.get_layout())
-        self.__button = Button("File").set_on_click_callback(self.__open_file)
+        self.__button = Button(button_label).set_on_click_callback(self._update_value)
         h_layout.addLayout(self.__button.get_layout())
         self._layout.addLayout(h_layout)
 
-        self.__default_path = ""
-        self.__files_types = ""
+        self._default_path = QDir.homePath()
 
     def set_default_path(self, default_path: str):
-        self.__default_path = default_path
+        self._default_path = default_path
         return self
 
-    def set_files_types(self, types: str):
-        self.__files_types = types
-        return self
+    def get_default_path(self):
+        return self._default_path
 
     def get_value(self):
         res = self.__line_edit.get_value()
@@ -335,9 +333,39 @@ class OpenFile(Widget, ValueContains):
 
     def set_value(self, value):
         self.__line_edit.set_value(value)
+        self.set_default_path(value)
 
-    def __open_file(self):
-        res = self._instance.getOpenFileName(caption="Open File", dir=self.__default_path, filter=self.__files_types)[0]
+    @abstractmethod
+    def _update_value(self):
+        """
+        Update path value by dialog
+        :return:
+        """
+
+
+class OpenFile(PathDialog):
+    def __init__(self, label: str):
+        super().__init__(label, "...")
+        self.__files_types = ""
+
+    def set_files_types(self, types: str):
+        self.__files_types = types
+        return self
+
+    def _update_value(self):
+        res = self._instance.getOpenFileName(caption="Open File", dir=self._default_path, filter=self.__files_types)[0]
+        if len(res) < 1:
+            return
+
+        self.set_value(res)
+
+
+class OpenDirectory(PathDialog):
+    def __init__(self, label: str):
+        super().__init__(label, "...")
+
+    def _update_value(self):
+        res = self._instance.getExistingDirectory(caption="Open Directory", dir=self._default_path, options=QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
         if len(res) < 1:
             return
 
