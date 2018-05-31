@@ -225,6 +225,10 @@ class DialogWindow(Window):
         if message is not None:
             self.insert_text_label(message)
 
+        self.__layout = QVBoxLayout()
+        self.__inner_layouts = [self.__layout]
+        self.get_current_layout().addLayout(self.__layout)
+
         self.__choose = None
         self.start_horizontal()
         for button in buttons:
@@ -232,6 +236,8 @@ class DialogWindow(Window):
             callback = getattr(self, button)
             self.add_widget(Button(button)).set_on_click_callback(lambda: self.close()).set_on_click_callback(callback)
         self.cancel()
+
+        self.get_current_layout = lambda: self.__inner_layouts[-1]
 
     def show(self):
         super().show()

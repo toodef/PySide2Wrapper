@@ -1,3 +1,5 @@
+import os
+
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
     QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog
 from PySide2.QtGui import QPixmap, QImage
@@ -332,6 +334,7 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         return None if len(res) < 1 else res
 
     def set_value(self, value):
+        value = os.path.abspath(value)
         self.__line_edit.set_value(value)
         self.set_default_path(value)
 
