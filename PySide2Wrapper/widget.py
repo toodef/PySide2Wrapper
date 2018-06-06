@@ -86,11 +86,19 @@ class LabeledWidget(Widget, metaclass=ABCMeta):
             self._layout = QHBoxLayout()
 
         if position in ['top', 'left']:
+            if position == 'top':
+                self._layout.addStretch()
             self._layout.addWidget(QLabel(text))
             self._layout.addWidget(self._instance)
+            if position == 'top':
+                self._layout.addStretch()
         elif position in ['bottom', 'right']:
+            if position == 'bottom':
+                self._layout.addStretch()
             self._layout.addWidget(self._instance)
             self._layout.addWidget(QLabel(text))
+            if position == 'bottom':
+                self._layout.addStretch()
 
         return self
 
@@ -159,6 +167,7 @@ class Button(Widget):
         self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
         self._instance.setText(title)
+        self._instance.resize(self._instance.minimumSizeHint())
 
     def set_on_click_callback(self, callback: callable):
         """
@@ -311,15 +320,8 @@ class Table(Widget):
 class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
     def __init__(self, label: str, button_label: str):
         super().__init__(QFileDialog())
-        self._layout = QVBoxLayout()
-        self._layout.addWidget(QLabel(label))
-        self.__line_edit = LineEdit()
-        h_layout = QHBoxLayout()
-        h_layout.addLayout(self.__line_edit.get_layout())
-        self.__button = Button(button_label).set_on_click_callback(self._update_value)
-        h_layout.addLayout(self.__button.get_layout())
-        self._layout.addLayout(h_layout)
-
+        self.__label = label
+        self.__button_label = button_label
         self._default_path = QDir.homePath()
 
     def set_default_path(self, default_path: str):
@@ -338,12 +340,34 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         self.__line_edit.set_value(value)
         self.set_default_path(value)
 
-    @abstractmethod
     def _update_value(self):
         """
         Update path value by dialog
         :return:
         """
+        res = self.call()
+        if len(res) < 1:
+            return
+
+        self.set_value(res)
+
+    @abstractmethod
+    def call(self) -> str:
+        """
+        Call dialog window
+        :return: result path
+        """
+
+    def get_layout(self):
+        self._layout = QVBoxLayout()
+        self._layout.addWidget(QLabel(self.__label))
+        self.__line_edit = LineEdit()
+        h_layout = QHBoxLayout()
+        h_layout.addLayout(self.__line_edit.get_layout())
+        self.__button = Button(self.__button_label).set_on_click_callback(self._update_value)
+        h_layout.addLayout(self.__button.get_layout())
+        self._layout.addLayout(h_layout)
+        return self._layout
 
 
 class OpenFile(PathDialog):
@@ -355,21 +379,27 @@ class OpenFile(PathDialog):
         self.__files_types = types
         return self
 
-    def _update_value(self):
-        res = self._instance.getOpenFileName(caption="Open File", dir=self._default_path, filter=self.__files_types)[0]
-        if len(res) < 1:
-            return
+    def call(self):
+        return self._instance.getOpenFileName(caption="Open File", dir=self._default_path, filter=self.__files_types)[0]
 
-        self.set_value(res)
+
+class SaveFile(PathDialog):
+    def __init__(self, label: str):
+        super().__init__(label, "...")
+        self.__files_types = ""
+
+    def set_files_types(self, types: str):
+        self.__files_types = types
+        return self
+
+    def call(self):
+        return self._instance.getSaveFileName(caption="Open File", dir=self._default_path, filter=self.__files_types)[0]
 
 
 class OpenDirectory(PathDialog):
     def __init__(self, label: str):
         super().__init__(label, "...")
 
-    def _update_value(self):
-        res = self._instance.getExistingDirectory(caption="Open Directory", dir=self._default_path, options=QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
-        if len(res) < 1:
-            return
-
-        self.set_value(res)
+    def call(self):
+        return self._instance.getExistingDirectory(caption="Open Directory", dir=self._default_path,
+                                                   options=QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)

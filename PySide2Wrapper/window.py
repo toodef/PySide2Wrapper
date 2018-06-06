@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QDialog, QWidget, QLabel, QDockWidget, \
-    QScrollArea
+    QScrollArea, QMainWindow
 from .widget import Widget, Button, ProgressBar
 
 
@@ -33,7 +33,8 @@ class AbstractWindow(metaclass=ABCMeta):
             self.__layouts = [QVBoxLayout()]
             self._widget.setLayout(self.get_current_layout())
 
-        self._widget.setWindowTitle(title)
+        self.__title = title
+        self._widget.setWindowTitle(self.__title)
         self._widget.resize(0, 0)
 
     @abstractmethod
@@ -49,6 +50,14 @@ class AbstractWindow(metaclass=ABCMeta):
         :return:
         """
         self._show()
+
+    def set_title_prefix(self, prefix: str):
+        """
+        Set window title prefix. If empty string: reset title to window title
+        :param prefix: window name prefix
+        :return:
+        """
+        self._widget.setWindowTitle("[{}] - {}".format(prefix, self.__title) if prefix != "" else self.__title)
 
     def add_widget(self, widget: Widget):
         """
@@ -169,6 +178,9 @@ class AbstractWindow(metaclass=ABCMeta):
     def resize(self, height, width):
         self._widget.resize(height, width)
 
+    def move(self, x, y):
+        self._widget.move(x, y)
+
     def close(self):
         self._widget.close()
 
@@ -184,7 +196,12 @@ class Window(AbstractWindow):
 
 class MainWindow(AbstractWindow):
     def __init__(self, title: str = ""):
-        super().__init__(title, QWidget())
+        super().__init__(title, QMainWindow())
+
+        self._widget.setGeometry(0, 0, 0, 0)
+        central_widget = QWidget()
+        central_widget.setLayout(self.get_current_layout())
+        self._widget.setCentralWidget(central_widget)
 
     def _show(self):
         self._widget.show()
