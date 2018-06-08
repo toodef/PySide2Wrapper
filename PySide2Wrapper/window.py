@@ -216,6 +216,15 @@ class AbstractWindow(metaclass=ABCMeta):
 
 class Window(AbstractWindow):
     def __init__(self, title: str = "", parent=None):
+        super().__init__(title, QWidget(parent))
+        self._widget.setWindowFlags(self._widget.windowFlags() & (~Qt.WindowContextHelpButtonHint))
+
+    def _show(self):
+        self._widget.show()
+
+
+class ModalWindow(AbstractWindow):
+    def __init__(self, title: str = "", parent=None):
         super().__init__(title, QDialog(parent))
         self._widget.setWindowFlags(self._widget.windowFlags() & (~Qt.WindowContextHelpButtonHint))
 
@@ -254,17 +263,17 @@ class DockWidget(AbstractWindow):
         self._widget.show()
 
 
-class MessageWindow(Window):
-    def __init__(self, title: str, message: str = None):
-        super().__init__(title)
+class MessageWindow(ModalWindow):
+    def __init__(self, title: str, message: str = None, parent=None):
+        super().__init__(title, parent=parent)
 
         if message is not None:
             self.insert_text_label(message)
 
-        self.__btn = self.add_widget(Button("Ok")).set_on_click_callback(lambda: self.close())
+        self.__btn = self.add_widget(Button("Ok").set_on_click_callback(lambda: self.close()))
 
 
-class DialogWindow(Window):
+class DialogWindow(ModalWindow):
     def __init__(self, title: str, buttons: [str], message: str = None):
         super().__init__(title)
 
@@ -297,7 +306,7 @@ class DialogWindow(Window):
         setattr(self, innerdynamo.__name__, innerdynamo)
 
 
-class ProgressWindow(Window):
+class ProgressWindow(ModalWindow):
     def __init__(self, title: str):
         super().__init__(title)
 
@@ -311,7 +320,7 @@ class ProgressWindow(Window):
         self.__progress_bar.set_value(value, status)
 
 
-class DoubleProgressWindow(Window):
+class DoubleProgressWindow(ModalWindow):
     def __init__(self, title: str):
         super().__init__(title)
 
