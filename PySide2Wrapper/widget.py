@@ -135,6 +135,13 @@ class ValueContains(metaclass=ABCMeta):
         :return: current value
         """
 
+    @abstractmethod
+    def set_value_changed_callback(self, callback: callable):
+        """
+        Set callback? that called when value in widget changed
+        :return: self object
+        """
+
 
 class LineEdit(LabeledWidget, ValueContains):
     def __init__(self):
@@ -154,6 +161,10 @@ class LineEdit(LabeledWidget, ValueContains):
         :return: current value
         """
         return self._instance.text()
+
+    def set_value_changed_callback(self, callback: callable):
+        self._instance.textChanged.connect(callback)
+        return self
 
     def _assembly(self):
         if self._layout is None:
@@ -259,6 +270,10 @@ class ComboBox(LabeledWidget, ValueContains):
     def get_value(self):
         return self._instance.currentIndex()
 
+    def set_value_changed_callback(self, callback: callable):
+        self._instance.currentIndexChanged.connect(callback)
+        return self
+
 
 class ProgressBar(Widget, ValueContains):
     class Instance(QObject):
@@ -286,6 +301,10 @@ class ProgressBar(Widget, ValueContains):
 
     def get_value(self):
         return self._instance.getValue()
+
+    def set_value_changed_callback(self, callback: callable):
+        self._instance.valueChanged.connect(callback)
+        return self
 
     def __set_value(self, value: int, status: str = ""):
         self._instance.setValue(value)
@@ -323,6 +342,8 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         self.__label = label
         self.__button_label = button_label
         self._default_path = QDir.homePath()
+        
+        self.__value_changed_callback = None
 
     def set_default_path(self, default_path: str):
         self._default_path = default_path
@@ -339,6 +360,12 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         value = os.path.abspath(value)
         self.__line_edit.set_value(value)
         self.set_default_path(value)
+
+        self.__value_changed_callback(value)
+
+    def set_value_changed_callback(self, callback: callable):
+        self.__value_changed_callback = callback
+        return self
 
     def _update_value(self):
         """

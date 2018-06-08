@@ -3,12 +3,16 @@ from abc import ABCMeta, abstractmethod
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QDialog, QWidget, QLabel, QDockWidget, \
     QScrollArea, QMainWindow
+
+from .utils import StateSaver
 from .widget import Widget, Button, ProgressBar
 
 
 class AbstractWindow(metaclass=ABCMeta):
     def __init__(self, title: str, widget: QWidget, enable_scrolling: bool = False):
         self._widget = widget
+
+        self._widget.closeEvent = lambda event: self.__on_close(event)
 
         if enable_scrolling:
             self.__scroll = QScrollArea(self._widget)
@@ -37,6 +41,10 @@ class AbstractWindow(metaclass=ABCMeta):
         self._widget.setWindowTitle(self.__title)
         self._widget.resize(0, 0)
 
+        self.__state_saver = None
+
+        self.__on_close_callbacks = []
+
     @abstractmethod
     def _show(self):
         """
@@ -44,12 +52,28 @@ class AbstractWindow(metaclass=ABCMeta):
         :return:
         """
 
+    def set_state_saver(self, saver: StateSaver):
+        self.__state_saver = saver
+
     def show(self):
         """
         Show this window
         :return:
         """
+        if self.__state_saver is not None:
+            self.__state_saver.load()
+
         self._show()
+
+    def add_on_close_callback(self, callback: callable):
+        self.__on_close_callbacks.append(callback)
+
+    def __on_close(self, event):
+        for c in self.__on_close_callbacks:
+            c(event)
+
+        if self.__state_saver is not None:
+            self.__state_saver.write()
 
     def set_title_prefix(self, prefix: str):
         """
@@ -59,15 +83,20 @@ class AbstractWindow(metaclass=ABCMeta):
         """
         self._widget.setWindowTitle("[{}] - {}".format(prefix, self.__title) if prefix != "" else self.__title)
 
-    def add_widget(self, widget: Widget):
+    def add_widget(self, widget: Widget, need_store=False):
         """
         Add widget to window layout
         :param widget: Widget unit
+        :param need_store: is need to store state  of specified widget
         :return: widget instance
         """
         self.get_current_layout().addStretch()
         self.get_current_layout().addLayout(widget.get_layout())
         self.get_current_layout().addStretch()
+
+        if need_store and self.__state_saver is not None:
+            self.__state_saver.add_widget(widget)
+
         return widget
 
     def add_widgets(self, widgets: [Widget]):
