@@ -3,15 +3,6 @@ import os
 
 
 class StateSaver:
-    # class __WidgetWrapper:
-    #     def __init__(self, widget):
-    #         self.__widget = widget
-    #
-    #     def __str__(self):
-    #         return str(self.__widget.get_value())
-    #
-    #     def set_value
-
     """
     StateSaver is a ui state manager. This works with Window and store it's widget states in file.
     That may used for restore ui state between process starts.
@@ -32,8 +23,9 @@ class StateSaver:
         """
         Write all states of all widgets to file
         """
+        data = {i: w for i, w in enumerate(self.__widgets) if not (type(w.get_value()) is str and w.get_value() == "") and w.get_value() is not None}
         with open(self.__path, 'w') as outfile:
-            json.dump({i: w for i, w in enumerate(self.__widgets) if not (type(w.get_value()) is str and w.get_value() == "")}, outfile, default=lambda w: w.get_value())
+            json.dump(data, outfile, default=lambda w: w.get_value())
 
     def load(self):
         """
@@ -42,8 +34,11 @@ class StateSaver:
         if not (os.path.exists(self.__path) and os.path.isfile(self.__path)):
             return
 
-        with open(self.__path, 'r') as infile:
-            states = json.load(infile)
+        try:
+            with open(self.__path, 'r') as infile:
+                states = json.load(infile)
 
-        for k, v in states.items():
-            self.__widgets[int(k)].set_value(v)
+            for k, v in states.items():
+                self.__widgets[int(k)].set_value(v)
+        except:
+            os.remove(self.__path)
