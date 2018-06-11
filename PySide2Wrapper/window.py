@@ -34,7 +34,7 @@ class AbstractWindow(metaclass=ABCMeta):
             self._window_layout.setSpacing(0)
             self._instance.setLayout(self._window_layout)
         else:
-            if not type(self._instance) in [QWidget, QDialog]:
+            if not type(self._instance) in [QMainWindow, QWidget, QDialog]:
                 widget = QWidget()
                 self.__layouts = [QVBoxLayout()]
                 widget.setLayout(self.get_current_layout())
