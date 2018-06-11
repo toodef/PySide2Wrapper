@@ -18,6 +18,14 @@ class Checkable(metaclass=ABCMeta):
         """
 
     @abstractmethod
+    def set_value(self, state: bool):
+        """
+        Set state of Widget: checked or not
+        :return: State
+        :rtype: self instance
+        """
+
+    @abstractmethod
     def get_value(self):
         """
         Get state of Widget: checked or not
@@ -225,6 +233,10 @@ class CheckBox(Widget, Checkable):
         self._instance.toggled.connect(callback)
         return self
 
+    def set_value(self, state: bool):
+        self._instance.setChecked(state)
+        return self
+
     def get_value(self):
         return self._instance.isChecked()
 
@@ -234,6 +246,10 @@ class RadioButton(Widget, Checkable):
         super().__init__(QRadioButton(title))
         self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
+
+    def set_value(self, state: bool):
+        self._instance.setChecked(state)
+        return self
 
     def get_value(self):
         return self._instance.isChecked()
