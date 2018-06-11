@@ -9,13 +9,13 @@ from .widget import Widget, Button, ProgressBar
 
 
 class AbstractWindow(metaclass=ABCMeta):
-    def __init__(self, title: str, widget: QWidget, enable_scrolling: bool = False):
-        self._widget = widget
+    def __init__(self, title: str, instance: QWidget, enable_scrolling: bool = False):
+        self._instance = instance
 
-        self._widget.closeEvent = lambda event: self.__on_close(event)
+        self._instance.closeEvent = lambda event: self.__on_close(event)
 
         if enable_scrolling:
-            self.__scroll = QScrollArea(self._widget)
+            self.__scroll = QScrollArea(self._instance)
 
             self._viewport = QWidget(self.__scroll)
             self.__layout = QVBoxLayout(self._viewport)
@@ -26,20 +26,26 @@ class AbstractWindow(metaclass=ABCMeta):
             self.__scroll.setWidget(self._viewport)
             self.__scroll.setWidgetResizable(True)
 
-            self._widget.setWidget(self.__scroll)
+            self._instance.setWidget(self.__scroll)
 
             self.__layouts = [self.__layout]
-            self._window_layout = QVBoxLayout(self._widget)
+            self._window_layout = QVBoxLayout(self._instance)
             self._window_layout.setMargin(0)
             self._window_layout.setSpacing(0)
-            self._widget.setLayout(self._window_layout)
+            self._instance.setLayout(self._window_layout)
         else:
-            self.__layouts = [QVBoxLayout()]
-            self._widget.setLayout(self.get_current_layout())
+            if not type(self._instance) in [QWidget, QDialog]:
+                widget = QWidget()
+                self.__layouts = [QVBoxLayout()]
+                widget.setLayout(self.get_current_layout())
+                self._instance.setWidget(widget)
+            else:
+                self.__layouts = [QVBoxLayout()]
+                self._instance.setLayout(self.get_current_layout())
 
         self.__title = title
-        self._widget.setWindowTitle(self.__title)
-        self._widget.resize(0, 0)
+        self._instance.setWindowTitle(self.__title)
+        self._instance.resize(0, 0)
 
         self.__state_saver = None
 
@@ -81,7 +87,7 @@ class AbstractWindow(metaclass=ABCMeta):
         :param prefix: window name prefix
         :return:
         """
-        self._widget.setWindowTitle("[{}] - {}".format(prefix, self.__title) if prefix != "" else self.__title)
+        self._instance.setWindowTitle("[{}] - {}".format(prefix, self.__title) if prefix != "" else self.__title)
 
     def add_widget(self, widget: Widget, need_store=False):
         """
@@ -194,10 +200,10 @@ class AbstractWindow(metaclass=ABCMeta):
         :return: window
         @rtype Window
         """
-        return Window(title, self._widget)
+        return Window(title, self._instance)
 
     def get_instance(self):
-        return self._widget
+        return self._instance
 
     def insert_text_label(self, text, is_link=False):
         widget = QLabel(text)
@@ -205,62 +211,73 @@ class AbstractWindow(metaclass=ABCMeta):
         self.get_current_layout().addWidget(widget)
 
     def resize(self, height, width):
-        self._widget.resize(height, width)
+        self._instance.resize(height, width)
 
     def move(self, x, y):
-        self._widget.move(x, y)
+        self._instance.move(x, y)
 
     def close(self):
-        self._widget.close()
+        self._instance.close()
 
 
 class Window(AbstractWindow):
-    def __init__(self, title: str = "", parent=None):
-        super().__init__(title, QWidget(parent))
-        self._widget.setWindowFlags(self._widget.windowFlags() & (~Qt.WindowContextHelpButtonHint))
+    def __init__(self, title: str = ""):
+        super().__init__(title, QWidget())
+        self._instance.setAttribute(Qt.WA_QuitOnClose, False)
+        self._instance.setWindowFlags(self._instance.windowFlags() & (~Qt.WindowContextHelpButtonHint))
 
     def _show(self):
-        self._widget.show()
+        self._instance.show()
 
 
 class ModalWindow(AbstractWindow):
     def __init__(self, title: str = "", parent=None):
         super().__init__(title, QDialog(parent))
-        self._widget.setWindowFlags(self._widget.windowFlags() & (~Qt.WindowContextHelpButtonHint))
+        self._instance.setWindowFlags(self._instance.windowFlags() & (~Qt.WindowContextHelpButtonHint))
 
     def _show(self):
-        self._widget.exec_()
+        self._instance.exec_()
 
 
 class MainWindow(AbstractWindow):
     def __init__(self, title: str = ""):
         super().__init__(title, QMainWindow())
 
-        self._widget.setGeometry(0, 0, 0, 0)
+        self._instance.setGeometry(0, 0, 0, 0)
         central_widget = QWidget()
         central_widget.setLayout(self.get_current_layout())
-        self._widget.setCentralWidget(central_widget)
+        self._instance.setCentralWidget(central_widget)
 
     def _show(self):
-        self._widget.show()
+        self._instance.show()
 
 
 class DockWidget(AbstractWindow):
-    def __init__(self, title: str, parent):
-        super().__init__(title, QDockWidget(parent), True)
-        parent.addDockWidget(Qt.LeftDockWidgetArea, self._widget)
+    def __init__(self, title: str, parent, area: str = 'left'):
+        """
+        DockWidget initial constructor
+        :param title: title of DockWidget
+        :param parent: parent window
+        :param area: area of placing; may be ['left', 'right', 'bottom', 'top']
+        """
+        super().__init__(title, QDockWidget(parent), False)
+
+        areas = {'left': Qt.LeftDockWidgetArea, 'right': Qt.RightDockWidgetArea, 'bottom': Qt.BottomDockWidgetArea,
+                 'top': Qt.TopDockWidgetArea}
+
+        parent.addDockWidget(areas[area], self._instance)
         self.__parent = parent
-        self._widget.show()
+        self._instance.show()
 
     def tabify(self, dock: QDockWidget):
         """
         Align dock widget with existing
         :param dock: dock widget
         """
-        self.__parent.tabifyDockWidget(dock, self._widget)
+        self.__parent.tabifyDockWidget(dock, self._instance)
 
     def _show(self):
-        self._widget.show()
+        self._instance.show()
 
 
 class MessageWindow(ModalWindow):
@@ -274,8 +291,8 @@ class MessageWindow(ModalWindow):
 
 
 class DialogWindow(ModalWindow):
-    def __init__(self, title: str, buttons: [str], message: str = None):
-        super().__init__(title)
+    def __init__(self, title: str, buttons: [str], message: str = None, parent=None):
+        super().__init__(title, parent=parent)
 
         if message is not None:
             self.insert_text_label(message)
@@ -320,7 +337,7 @@ class ProgressWindow(ModalWindow):
         self.__progress_bar.set_value(value, status)
 
 
-class DoubleProgressWindow(ModalWindow):
+class DoubleProgressWindow(Window):
     def __init__(self, title: str):
         super().__init__(title)
 
