@@ -1,7 +1,7 @@
 import os
 
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
-    QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog
+    QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog, QLayout, QToolButton
 from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtCore import QObject, Signal, QDir
 from abc import ABCMeta, abstractmethod
@@ -173,12 +173,11 @@ class LineEdit(LabeledWidget, ValueContains):
 
 
 class Button(Widget):
-    def __init__(self, title: str):
-        super().__init__(QPushButton())
+    def __init__(self, title: str, is_tool_button: bool = False):
+        super().__init__(QToolButton() if is_tool_button else QPushButton())
         self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
         self._instance.setText(title)
-        self._instance.resize(self._instance.minimumSizeHint())
 
     def set_on_click_callback(self, callback: callable):
         """
@@ -342,8 +341,8 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         self.__label = label
         self.__button_label = button_label
         self._default_path = QDir.homePath()
-        
-        self.__value_changed_callback = None
+
+        self.__value_changed_callbacks = []
 
     def set_default_path(self, default_path: str):
         self._default_path = default_path
@@ -361,10 +360,11 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         self.__line_edit.set_value(value)
         self.set_default_path(value)
 
-        self.__value_changed_callback(value)
+        for c in self.__value_changed_callbacks:
+            c(value)
 
     def set_value_changed_callback(self, callback: callable):
-        self.__value_changed_callback = callback
+        self.__value_changed_callbacks.append(callback)
         return self
 
     def _update_value(self):
