@@ -236,7 +236,7 @@ class ModalWindow(AbstractWindow):
         self._instance.setWindowFlags(self._instance.windowFlags() & (~Qt.WindowContextHelpButtonHint))
 
     def _show(self):
-        self._instance.exec_()
+        self._instance.show()
 
 
 class MainWindow(AbstractWindow):
