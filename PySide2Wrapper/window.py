@@ -193,14 +193,14 @@ class AbstractWindow(metaclass=ABCMeta):
         """
         del self.__layouts[-1]
 
-    def add_subwindow(self, title: str):
+    def add_subwindow(self, title: str, is_modal=True):
         """
         Create subwindow
         :param title: window title
         :return: window
         @rtype Window
         """
-        return Window(title, self._instance)
+        return ModalWindow(title, self._instance) if is_modal else Window(title, self._instance)
 
     def get_instance(self):
         return self._instance
@@ -236,7 +236,7 @@ class ModalWindow(AbstractWindow):
         self._instance.setWindowFlags(self._instance.windowFlags() & (~Qt.WindowContextHelpButtonHint))
 
     def _show(self):
-        self._instance.show()
+        self._instance.exec_()
 
 
 class MainWindow(AbstractWindow):
