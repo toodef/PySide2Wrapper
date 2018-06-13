@@ -221,8 +221,8 @@ class AbstractWindow(metaclass=ABCMeta):
 
 
 class Window(AbstractWindow):
-    def __init__(self, title: str = ""):
-        super().__init__(title, QWidget())
+    def __init__(self, title: str = "", parent=None):
+        super().__init__(title, QWidget(parent))
         self._instance.setAttribute(Qt.WA_QuitOnClose, False)
         self._instance.setWindowFlags(self._instance.windowFlags() & (~Qt.WindowContextHelpButtonHint))
 
