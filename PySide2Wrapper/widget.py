@@ -395,11 +395,16 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         self.set_value(res)
 
     @abstractmethod
-    def call(self) -> str:
+    def _call(self) -> str:
         """
         Call dialog window
         :return: result path
         """
+
+    def call(self) -> str:
+        path = self._call()
+        self.set_value(path)
+        return path
 
     def get_layout(self):
         self._layout = QVBoxLayout()
@@ -422,7 +427,7 @@ class OpenFile(PathDialog):
         self.__files_types = types
         return self
 
-    def call(self):
+    def _call(self):
         return self._instance.getOpenFileName(caption="Open File", dir=self._default_path, filter=self.__files_types)[0]
 
 
@@ -435,7 +440,7 @@ class SaveFile(PathDialog):
         self.__files_types = types
         return self
 
-    def call(self):
+    def _call(self):
         return self._instance.getSaveFileName(caption="Open File", dir=self._default_path, filter=self.__files_types)[0]
 
 
@@ -443,6 +448,6 @@ class OpenDirectory(PathDialog):
     def __init__(self, label: str):
         super().__init__(label, "...")
 
-    def call(self):
+    def _call(self):
         return self._instance.getExistingDirectory(caption="Open Directory", dir=self._default_path,
                                                    options=QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)

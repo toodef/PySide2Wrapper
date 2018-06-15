@@ -9,7 +9,7 @@ class StateSaver:
     """
     def __init__(self, store_path: str):
         self.__path = store_path
-
+        self.__is_loaded = False
         self.__widgets = []
 
     def add_widget(self, widget):
@@ -31,7 +31,7 @@ class StateSaver:
         """
         Load all states of all widgets from file
         """
-        if not (os.path.exists(self.__path) and os.path.isfile(self.__path)):
+        if self.__is_loaded or (not (os.path.exists(self.__path) and os.path.isfile(self.__path))):
             return
 
         try:
@@ -42,3 +42,5 @@ class StateSaver:
                 self.__widgets[int(k)].set_value(v)
         except:
             os.remove(self.__path)
+
+        self.__is_loaded = True
