@@ -318,7 +318,7 @@ class DialogWindow(ModalWindow):
         for button in buttons:
             self.__add_method(button)
             callback = getattr(self, button)
-            self.add_widget(Button(button)).set_on_click_callback(lambda: self.close()).set_on_click_callback(callback)
+            setattr(self, button, self.add_widget(Button(button)).set_on_click_callback(lambda: self.close()).set_on_click_callback(callback))
         self.cancel()
 
         self.get_current_layout = lambda: self.__inner_layouts[-1]
