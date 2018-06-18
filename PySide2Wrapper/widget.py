@@ -419,7 +419,7 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         self.__line_edit = LineEdit()
         h_layout = QHBoxLayout()
         h_layout.addLayout(self.__line_edit.get_layout())
-        self.__button = Button(self.__button_label).set_on_click_callback(self._update_value)
+        self.__button = Button(self.__button_label, is_tool_button=True).set_on_click_callback(self._update_value)
         h_layout.addLayout(self.__button.get_layout())
         self._layout.addLayout(h_layout)
         return self._layout
