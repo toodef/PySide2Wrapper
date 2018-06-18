@@ -222,8 +222,8 @@ class AbstractWindow(metaclass=ABCMeta):
         widget.setLayout(self.get_current_layout())
         self.__cur_tab_widget.addTab(widget, name)
 
-    def resize(self, height, width):
-        self._instance.resize(height, width)
+    def resize(self, width, height):
+        self._instance.resize(width, height)
 
     def move(self, x, y):
         self._instance.move(x, y)
@@ -349,7 +349,7 @@ class ProgressWindow(ModalWindow):
         self.__progress_bar.set_value(value, status)
 
 
-class DoubleProgressWindow(Window):
+class DoubleProgressWindow(ModalWindow):
     def __init__(self, title: str):
         super().__init__(title)
 
