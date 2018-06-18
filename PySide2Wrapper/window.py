@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QDialog, QWidget, QLabel, QDockWidget, \
-    QScrollArea, QMainWindow
+    QScrollArea, QMainWindow, QTabWidget
 
 from .utils import StateSaver
 from .widget import Widget, Button, ProgressBar
@@ -50,6 +50,8 @@ class AbstractWindow(metaclass=ABCMeta):
         self.__state_saver = None
 
         self.__on_close_callbacks = []
+
+        self.__cur_tab_widget = None
 
     @abstractmethod
     def _show(self):
@@ -209,6 +211,16 @@ class AbstractWindow(metaclass=ABCMeta):
         widget = QLabel(text)
         widget.setOpenExternalLinks(is_link)
         self.get_current_layout().addWidget(widget)
+
+    def insert_tab_space(self):
+        self.__cur_tab_widget = QTabWidget()
+        self.get_current_layout().addWidget(self.__cur_tab_widget)
+
+    def add_tab(self, name):
+        self.__layouts.append(QVBoxLayout())
+        widget = QWidget()
+        widget.setLayout(self.get_current_layout())
+        self.__cur_tab_widget.addTab(widget, name)
 
     def resize(self, height, width):
         self._instance.resize(height, width)

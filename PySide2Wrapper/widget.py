@@ -1,7 +1,8 @@
 import os
 
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
-    QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog, QLayout, QToolButton
+    QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog, QLayout, QToolButton, QTabWidget, \
+    QWidget
 from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtCore import QObject, Signal, QDir
 from abc import ABCMeta, abstractmethod
@@ -56,6 +57,13 @@ class Widget:
         """
         return self._instance
 
+    def _may_be_enabled(self, is_enabled):
+        if is_enabled:
+            for depends in self._enabled_dependencies:
+                if not depends.get_value():
+                    return False
+        return is_enabled
+
     def set_enabled(self, is_enabled: bool = True):
         """
         Set widget enabled
@@ -63,12 +71,7 @@ class Widget:
         :return: Widget object (self)
         :rtype: Widget
         """
-        if is_enabled:
-            for depends in self._enabled_dependencies:
-                if not depends.get_value():
-                    self._instance.setEnabled(False)
-                    return self
-        self._instance.setEnabled(is_enabled)
+        self._instance.setEnabled(self._may_be_enabled(is_enabled))
         return self
 
     def add_enabled_dependency(self, dependency: Checkable):
@@ -360,6 +363,9 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
 
         self.__value_changed_callbacks = []
 
+        self.__line_edit = None
+        self.__button = None
+
     def set_default_path(self, default_path: str):
         self._default_path = default_path
         return self
@@ -373,7 +379,8 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
 
     def set_value(self, value):
         value = os.path.abspath(value)
-        self.__line_edit.set_value(value)
+        if self.__line_edit is not None:
+            self.__line_edit.set_value(value)
         self.set_default_path(value)
 
         for c in self.__value_changed_callbacks:
@@ -417,6 +424,13 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         self._layout.addLayout(h_layout)
         return self._layout
 
+    def set_enabled(self, is_enabled: bool = True):
+        res = self._may_be_enabled(is_enabled)
+        if self.__line_edit is not None:
+            self.__line_edit.set_enabled(res)
+        if self.__button is not None:
+            self.__button.set_enabled(res)
+
 
 class OpenFile(PathDialog):
     def __init__(self, label: str):
@@ -451,3 +465,12 @@ class OpenDirectory(PathDialog):
     def _call(self):
         return self._instance.getExistingDirectory(caption="Open Directory", dir=self._default_path,
                                                    options=QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
+
+
+class TabWidget(Widget):
+    def __init__(self):
+        super().__init__(QTabWidget())
+        self._layout.addWidget(self._instance)
+
+    def add_tab(self, layout: [QLayout], name: str) -> None:
+        self._instance.addTab(QWidget().setLayout(layout), name)
