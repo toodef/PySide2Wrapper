@@ -210,8 +210,8 @@ class AbstractWindow(metaclass=ABCMeta):
         widget.setOpenExternalLinks(is_link)
         self.get_current_layout().addWidget(widget)
 
-    def resize(self, height, width):
-        self._instance.resize(height, width)
+    def resize(self, width, height):
+        self._instance.resize(width, height)
 
     def move(self, x, y):
         self._instance.move(x, y)
