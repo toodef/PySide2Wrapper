@@ -337,7 +337,7 @@ class ProgressWindow(ModalWindow):
         self.__progress_bar.set_value(value, status)
 
 
-class DoubleProgressWindow(Window):
+class DoubleProgressWindow(ModalWindow):
     def __init__(self, title: str):
         super().__init__(title)
 
