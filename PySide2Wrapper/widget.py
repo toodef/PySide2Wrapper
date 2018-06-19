@@ -396,20 +396,22 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         :return:
         """
         res = self.call()
-        if len(res) < 1:
+        if res is None or len(res) < 1:
             return
 
         self.set_value(res)
 
     @abstractmethod
-    def _call(self) -> str:
+    def _call(self) -> str or None:
         """
         Call dialog window
         :return: result path
         """
 
-    def call(self) -> str:
+    def call(self) -> str or None:
         path = self._call()
+        if path is None or len(path) < 1:
+            return None
         self.set_value(path)
         return path
 
@@ -455,7 +457,7 @@ class SaveFile(PathDialog):
         return self
 
     def _call(self):
-        return self._instance.getSaveFileName(caption="Open File", dir=self._default_path, filter=self.__files_types)[0]
+        return self._instance.getSaveFileName(caption="Save File", dir=self._default_path, filter=self.__files_types)[0]
 
 
 class OpenDirectory(PathDialog):
@@ -464,7 +466,7 @@ class OpenDirectory(PathDialog):
 
     def _call(self):
         return self._instance.getExistingDirectory(caption="Open Directory", dir=self._default_path,
-                                                   options=QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
+                                                  options=QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
 
 
 class TabWidget(Widget):
