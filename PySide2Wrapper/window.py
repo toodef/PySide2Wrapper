@@ -4,13 +4,12 @@ from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QDialog, QWidget, QLabel, QDockWidget, \
     QScrollArea, QMainWindow, QTabWidget
 
-from .utils import StateSaver
 from .widget import Widget, Button, ProgressBar
 
 
-class AbstractWindow(metaclass=ABCMeta):
+class AbstractWindow(Widget, metaclass=ABCMeta):
     def __init__(self, title: str, instance: QWidget, enable_scrolling: bool = False):
-        self._instance = instance
+        super().__init__(instance)
 
         self._instance.closeEvent = lambda event: self.__on_close(event)
 
@@ -28,7 +27,7 @@ class AbstractWindow(metaclass=ABCMeta):
 
             self._instance.setWidget(self.__scroll)
 
-            self.__layouts = [self.__layout]
+            self._layouts = [self.__layout]
             self._window_layout = QVBoxLayout(self._instance)
             self._window_layout.setMargin(0)
             self._window_layout.setSpacing(0)
@@ -36,22 +35,18 @@ class AbstractWindow(metaclass=ABCMeta):
         else:
             if not type(self._instance) in [QMainWindow, QWidget, QDialog]:
                 widget = QWidget()
-                self.__layouts = [QVBoxLayout()]
+                self._layouts = [QVBoxLayout()]
                 widget.setLayout(self.get_current_layout())
                 self._instance.setWidget(widget)
             else:
-                self.__layouts = [QVBoxLayout()]
+                self._layouts = [QVBoxLayout()]
                 self._instance.setLayout(self.get_current_layout())
 
         self.__title = title
         self._instance.setWindowTitle(self.__title)
         self._instance.resize(0, 0)
 
-        self.__state_saver = None
-
         self.__on_close_callbacks = []
-
-        self.__cur_tab_widget = None
 
     @abstractmethod
     def _show(self):
@@ -60,16 +55,13 @@ class AbstractWindow(metaclass=ABCMeta):
         :return:
         """
 
-    def set_state_saver(self, saver: StateSaver):
-        self.__state_saver = saver
-
     def show(self):
         """
         Show this window
         :return:
         """
-        if self.__state_saver is not None:
-            self.__state_saver.load()
+        if self._state_saver is not None:
+            self._state_saver.load()
 
         self._show()
 
@@ -80,8 +72,8 @@ class AbstractWindow(metaclass=ABCMeta):
         for c in self.__on_close_callbacks:
             c(event)
 
-        if self.__state_saver is not None:
-            self.__state_saver.write()
+        if self._state_saver is not None:
+            self._state_saver.write()
 
     def set_title_prefix(self, prefix: str):
         """
@@ -91,110 +83,6 @@ class AbstractWindow(metaclass=ABCMeta):
         """
         self._instance.setWindowTitle("[{}] - {}".format(prefix, self.__title) if prefix != "" else self.__title)
 
-    def add_widget(self, widget: Widget, need_store=False):
-        """
-        Add widget to window layout
-        :param widget: Widget unit
-        :param need_store: is need to store state  of specified widget
-        :return: widget instance
-        """
-        self.get_current_layout().addStretch()
-        self.get_current_layout().addLayout(widget.get_layout())
-        self.get_current_layout().addStretch()
-
-        if need_store and self.__state_saver is not None:
-            self.__state_saver.add_widget(widget)
-
-        return widget
-
-    def add_widgets(self, widgets: [Widget]):
-        """
-        Add list of widgets to window layout
-        :param widgets: Widget units
-        :return: None
-        """
-        for widget in widgets:
-            self.get_current_layout().addLayout(widget.get_layout())
-
-    def start_horizontal(self):
-        """
-        Start horizontal components insertion
-        :return: None
-        """
-        if isinstance(self.get_current_layout(), QHBoxLayout):
-            return
-        layout = QHBoxLayout()
-        self.get_current_layout().addLayout(layout)
-        self.__layouts.append(layout)
-
-    def start_vertical(self):
-        """
-        Start vertical components insertion
-        :return: None
-        """
-        if isinstance(self.get_current_layout(), QVBoxLayout):
-            return
-        layout = QVBoxLayout()
-        self.get_current_layout().addLayout(layout)
-        self.__layouts.append(layout)
-
-    def group_horizontal(self, widgets: list):
-        """
-        Place list of widgets horizontal
-        :param widgets: list of widgets
-        :return: None
-        """
-        self.start_horizontal()
-        self.add_widgets(widgets)
-        self.cancel()
-
-    def group_vertical(self, widgets: [Widget]):
-        """
-        Place list of widgets vertical
-        :param widgets: list of widgets
-        :return: None
-        """
-        self.start_vertical()
-        self.add_widgets(widgets)
-        self.cancel()
-
-    def get_current_layout(self):
-        """
-        Return current layout
-        :return: layout of type QLayout
-        """
-        return self.__layouts[-1]
-
-    def add_to_group_box(self, group_name: str, widgets: [Widget]):
-        """
-        Place layout to group box
-        :param group_name: name of group
-        :param widgets: list of widgets, that been placed to group
-        :return: None
-        """
-        self.start_group_box(group_name)
-        for widget in widgets:
-            self.add_widget(widget)
-        self.cancel()
-
-    def start_group_box(self, name: str):
-        """
-        Start group box
-        :return:
-        """
-        group_box = QGroupBox(name)
-        group_box_layout = QVBoxLayout()
-        group_box.setLayout(group_box_layout)
-        self.get_current_layout().addWidget(group_box)
-        self.__layouts.append(group_box_layout)
-
-    def cancel(self):
-        """
-        Cnacel last format append
-        :return: None
-        """
-        del self.__layouts[-1]
-
     def add_subwindow(self, title: str, is_modal=True):
         """
         Create subwindow
@@ -203,24 +91,6 @@ class AbstractWindow(metaclass=ABCMeta):
         @rtype Window
         """
         return ModalWindow(title, self._instance) if is_modal else Window(title, self._instance)
-
-    def get_instance(self):
-        return self._instance
-
-    def insert_text_label(self, text, is_link=False):
-        widget = QLabel(text)
-        widget.setOpenExternalLinks(is_link)
-        self.get_current_layout().addWidget(widget)
-
-    def insert_tab_space(self):
-        self.__cur_tab_widget = QTabWidget()
-        self.get_current_layout().addWidget(self.__cur_tab_widget)
-
-    def add_tab(self, name):
-        self.__layouts.append(QVBoxLayout())
-        widget = QWidget()
-        widget.setLayout(self.get_current_layout())
-        self.__cur_tab_widget.addTab(widget, name)
 
     def resize(self, width, height):
         self._instance.resize(width, height)

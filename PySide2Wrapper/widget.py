@@ -2,10 +2,12 @@ import os
 
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
     QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog, QLayout, QToolButton, QTabWidget, \
-    QWidget, QListWidget, QListWidgetItem
+    QWidget, QListWidget, QListWidgetItem, QGroupBox, QStackedLayout
 from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtCore import QObject, Signal, QDir, Qt
 from abc import ABCMeta, abstractmethod
+
+from .utils import StateSaver
 
 
 class Checkable(metaclass=ABCMeta):
@@ -36,10 +38,17 @@ class Checkable(metaclass=ABCMeta):
 
 
 class Widget:
-    def __init__(self, instance: QObject):
-        self._layout = None
-        self._instance = instance
+    def __init__(self, instance: QObject = None):
+        self._layout = QVBoxLayout()
+        if instance is not None:
+            self._instance = instance
         self._enabled_dependencies = []
+        self._state_saver = None
+        self._layouts = [QVBoxLayout()]
+        self._cur_tab_widget = None
+
+    def set_state_saver(self, saver: StateSaver):
+        self._state_saver = saver
 
     def get_layout(self):
         """
@@ -47,6 +56,7 @@ class Widget:
         :return: layout, contains Widget instance
         @:rtype: QLayout
         """
+        self._layout.addLayout(self._layouts[-1])
         return self._layout
 
     def get_instance(self):
@@ -78,6 +88,125 @@ class Widget:
         self.set_enabled(dependency.get_value())
         self._enabled_dependencies.append(dependency)
         dependency.add_clicked_callback(self.set_enabled)
+
+    def add_widget(self, widget: "Widget instance", need_store=False):
+        """
+        Add widget to window layout
+        :param widget: Widget unit
+        :param need_store: is need to store state  of specified widget
+        :return: widget instance
+        """
+        self.get_current_layout().addStretch()
+        self.get_current_layout().addLayout(widget.get_layout())
+        self.get_current_layout().addStretch()
+
+        if need_store and self._state_saver is not None:
+            self._state_saver.add_widget(widget)
+
+        return widget
+
+    def add_widgets(self, widgets: "list of Widget instances"):
+        """
+        Add list of widgets to window layout
+        :param widgets: Widget units
+        :return: None
+        """
+        for widget in widgets:
+            self.get_current_layout().addLayout(widget.get_layout())
+
+    def start_horizontal(self):
+        """
+        Start horizontal components insertion
+        :return: None
+        """
+        if isinstance(self.get_current_layout(), QHBoxLayout):
+            return
+        layout = QHBoxLayout()
+        self.get_current_layout().addLayout(layout)
+        self._layouts.append(layout)
+
+    def start_vertical(self):
+        """
+        Start vertical components insertion
+        :return: None
+        """
+        if isinstance(self.get_current_layout(), QVBoxLayout):
+            return
+        layout = QVBoxLayout()
+        self.get_current_layout().addLayout(layout)
+        self._layouts.append(layout)
+
+    def group_horizontal(self, widgets: list):
+        """
+        Place list of widgets horizontal
+        :param widgets: list of widgets
+        :return: None
+        """
+        self.start_horizontal()
+        self.add_widgets(widgets)
+        self.cancel()
+
+    def group_vertical(self, widgets: "list of Widget instances"):
+        """
+        Place list of widgets vertical
+        :param widgets: list of widgets
+        :return: None
+        """
+        self.start_vertical()
+        self.add_widgets(widgets)
+        self.cancel()
+
+    def get_current_layout(self):
+        """
+        Return current layout
+        :return: layout of type QLayout
+        """
+        return self._layouts[-1]
+
+    def add_to_group_box(self, group_name: str, widgets: "list of Widget instances"):
+        """
+        Place layout to group box
+        :param group_name: name of group
+        :param widgets: list of widgets, that been placed to group
+        :return: None
+        """
+        self.start_group_box(group_name)
+        for widget in widgets:
+            self.add_widget(widget)
+        self.cancel()
+
+    def start_group_box(self, name: str):
+        """
+        Start group box
+        :return:
+        """
+        group_box = QGroupBox(name)
+        group_box_layout = QVBoxLayout()
+        group_box.setLayout(group_box_layout)
+        self.get_current_layout().addWidget(group_box)
+        self._layouts.append(group_box_layout)
+
+    def cancel(self):
+        """
+        Cnacel last format append
+        :return: None
+        """
+        del self._layouts[-1]
+
+    def insert_text_label(self, text, is_link=False):
+        widget = QLabel(text)
+        widget.setOpenExternalLinks(is_link)
+        self.get_current_layout().addWidget(widget)
+
+    def insert_tab_space(self):
+        self._cur_tab_widget = QTabWidget()
+        self.get_current_layout().addWidget(self._cur_tab_widget)
+
+    def add_tab(self, name):
+        self._layouts.append(QVBoxLayout())
+        widget = QWidget()
+        widget.setLayout(self.get_current_layout())
+        self._cur_tab_widget.addTab(widget, name)
 
 
 class LabeledWidget(Widget, metaclass=ABCMeta):
@@ -178,15 +307,12 @@ class LineEdit(LabeledWidget, ValueContains):
         return self
 
     def _assembly(self):
-        if self._layout is None:
-            self._layout = QVBoxLayout()
-            self._layout.addWidget(self._instance)
+        self._layout.addWidget(self._instance)
 
 
 class Button(Widget):
     def __init__(self, title: str, is_tool_button: bool = False):
         super().__init__(QToolButton() if is_tool_button else QPushButton())
-        self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
         self._instance.setText(title)
 
@@ -203,7 +329,6 @@ class Button(Widget):
 class ImageLayout(Widget):
     def __init__(self):
         super().__init__(QLabel())
-        self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
         self.__pixmap = None
 
@@ -229,7 +354,6 @@ class ImageLayout(Widget):
 class CheckBox(Widget, Checkable):
     def __init__(self, title: str):
         super().__init__(QCheckBox(title))
-        self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
 
     def add_clicked_callback(self, callback: callable):
@@ -247,7 +371,6 @@ class CheckBox(Widget, Checkable):
 class RadioButton(Widget, Checkable):
     def __init__(self, title: str):
         super().__init__(QRadioButton(title))
-        self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
 
     def set_value(self, state: bool):
@@ -267,9 +390,7 @@ class ComboBox(LabeledWidget, ValueContains):
         super().__init__(QComboBox())
 
     def _assembly(self):
-        if self._layout is None:
-            self._layout = QVBoxLayout()
-            self._layout.addWidget(self._instance)
+        self._layout.addWidget(self._instance)
 
     def add_items(self, values: []):
         """
@@ -305,7 +426,6 @@ class ProgressBar(Widget, ValueContains):
 
     def __init__(self):
         super().__init__(QProgressBar())
-        self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
 
         self.__status = QLabel()
@@ -333,7 +453,6 @@ class Table(Widget):
     def __init__(self):
         super().__init__(QTableWidget())
         self._instance.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
 
     def add_row(self, items: []):
@@ -414,8 +533,9 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         return path
 
     def get_layout(self):
-        self._layout = QVBoxLayout()
+        super().get_layout()
         self._layout.addWidget(QLabel(self.__label))
+
         self.__line_edit = LineEdit()
         h_layout = QHBoxLayout()
         h_layout.addLayout(self.__line_edit.get_layout())
@@ -467,48 +587,76 @@ class OpenDirectory(PathDialog):
                                                    options=QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
 
 
-class TabWidget(Widget):
-    def __init__(self):
-        super().__init__(QTabWidget())
-        self._layout.addWidget(self._instance)
-
-    def add_tab(self, layout: [QLayout], name: str) -> None:
-        self._instance.addTab(QWidget().setLayout(layout), name)
-
-
 class ListWidget(Widget, ValueContains):
     def __init__(self):
         super().__init__(QListWidget())
-        self._layout = QVBoxLayout()
         self._layout.addWidget(self._instance)
-
-        self.__items = {}
+        self.__items = []
 
     def add_items(self, items: [str], is_editable=True) -> Widget:
         for item in items:
-            self.__items[item] = QListWidgetItem(item, self._instance)
+            self.__items.append(QListWidgetItem(item, self._instance))
             if is_editable:
-                self.__items[item].setFlags(self.__items[item].flags() | Qt.ItemIsEditable)
-            self._instance.addItem(self.__items[item])
+                self.__items[-1].setFlags(self.__items[-1].flags() | Qt.ItemIsEditable)
+            self._instance.addItem(self.__items[-1])
         return self
 
-    def set_value(self, value):
+    def remove_item(self, idx: int):
+        self._instance.takeItem(idx)
+        del self.__items[idx]
+
+    def remove_current(self):
+        self.remove_item(self.__get_item_idx(self._instance.currentItem()))
+
+    def clear(self):
+        for i in range(len(self.__items)):
+            self.remove_item(i)
+
+    def set_value(self, value: int):
         self._instance.setItem(self.__items[value])
 
     def get_value(self):
-        return self.__get_item_name(self._instance.currentItem())
+        return self.__items.index(self._instance.currentItem())
 
     def set_value_changed_callback(self, callback: callable):
-        self._instance.currentItemChanged.connect(lambda cur, prev: callback(self.__get_item_name(cur)))
+        self._instance.currentItemChanged.connect(lambda cur, prev: callback(self.__get_item_idx(cur)))
         return self
 
     def set_item_renamed_callback(self, callback: callable):
         def internal(item: QListWidgetItem):
-            old_name = self.__get_item_name(item)
-            callback(old_name, item.text())
-            self.__items[item.tetx()] = self.__items.pop(old_name)
+            idx = self.__get_item_idx(self._instance.currentItem())
+            callback(idx, item.text())
 
         self._instance.itemChanged.connect(internal)
 
-    def __get_item_name(self, item):
-        return [name for name, it in self.__items.items() if it is item][0]
+    def __get_item_idx(self, item: QListWidgetItem):
+        for idx, it in enumerate(self.__items):
+            if it is item:
+                return idx
+        return None
+
+
+class DynamicView(Widget):
+    def __init__(self):
+        super().__init__()
+        self.__stacked_layout = QStackedLayout()
+        self._layout.addLayout(self.__stacked_layout)
+
+        self.__widgets = []
+
+    def add_item(self, item: Widget):
+        w = QWidget()
+        w.setLayout(item.get_layout())
+        self.__stacked_layout.addWidget(w)
+        self.__widgets.append(w)
+
+    def remove_item(self, idx: int):
+        self.__stacked_layout.takeAt(idx)
+        del self.__widgets[idx]
+
+    def clear(self):
+        for i in range(len(self.__widgets)):
+            self.remove_item(i)
+
+    def set_index(self, idx: int):
+        self.__stacked_layout.setCurrentIndex(idx)
