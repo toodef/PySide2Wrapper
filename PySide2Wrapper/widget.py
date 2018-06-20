@@ -2,9 +2,9 @@ import os
 
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
     QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog, QLayout, QToolButton, QTabWidget, \
-    QWidget
+    QWidget, QListWidget, QListWidgetItem
 from PySide2.QtGui import QPixmap, QImage
-from PySide2.QtCore import QObject, Signal, QDir
+from PySide2.QtCore import QObject, Signal, QDir, Qt
 from abc import ABCMeta, abstractmethod
 
 
@@ -390,15 +390,13 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         self.__value_changed_callbacks.append(callback)
         return self
 
-    def _update_value(self):
+    def _update_value(self) -> None:
         """
         Update path value by dialog
-        :return:
         """
         res = self.call()
         if res is None or len(res) < 1:
             return
-
         self.set_value(res)
 
     @abstractmethod
@@ -466,7 +464,7 @@ class OpenDirectory(PathDialog):
 
     def _call(self):
         return self._instance.getExistingDirectory(caption="Open Directory", dir=self._default_path,
-                                                  options=QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
+                                                   options=QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks)
 
 
 class TabWidget(Widget):
@@ -476,3 +474,41 @@ class TabWidget(Widget):
 
     def add_tab(self, layout: [QLayout], name: str) -> None:
         self._instance.addTab(QWidget().setLayout(layout), name)
+
+
+class ListWidget(Widget, ValueContains):
+    def __init__(self):
+        super().__init__(QListWidget())
+        self._layout = QVBoxLayout()
+        self._layout.addWidget(self._instance)
+
+        self.__items = {}
+
+    def add_items(self, items: [str], is_editable=True) -> Widget:
+        for item in items:
+            self.__items[item] = QListWidgetItem(item, self._instance)
+            if is_editable:
+                self.__items[item].setFlags(self.__items[item].flags() | Qt.ItemIsEditable)
+            self._instance.addItem(self.__items[item])
+        return self
+
+    def set_value(self, value):
+        self._instance.setItem(self.__items[value])
+
+    def get_value(self):
+        return self.__get_item_name(self._instance.currentItem())
+
+    def set_value_changed_callback(self, callback: callable):
+        self._instance.currentItemChanged.connect(lambda cur, prev: callback(self.__get_item_name(cur)))
+        return self
+
+    def set_item_renamed_callback(self, callback: callable):
+        def internal(item: QListWidgetItem):
+            old_name = self.__get_item_name(item)
+            callback(old_name, item.text())
+            self.__items[item.tetx()] = self.__items.pop(old_name)
+
+        self._instance.itemChanged.connect(internal)
+
+    def __get_item_name(self, item):
+        return [name for name, it in self.__items.items() if it is item][0]
