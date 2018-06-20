@@ -210,6 +210,10 @@ class Widget:
 
 
 class LabeledWidget(Widget, metaclass=ABCMeta):
+    def __init__(self, instance: QObject = None):
+        super().__init__(instance)
+        self.__is_assembled = False
+
     def add_label(self, text: str, position: str):
         """
         Add label to widget
@@ -240,6 +244,7 @@ class LabeledWidget(Widget, metaclass=ABCMeta):
             if position == 'bottom':
                 self._layout.addStretch()
 
+        self.__is_assembled = True
         return self
 
     def get_layout(self):
@@ -248,7 +253,8 @@ class LabeledWidget(Widget, metaclass=ABCMeta):
         :return: layout
         @:rtype: QLayout
         """
-        self._assembly()
+        if not self.__is_assembled:
+            self._assembly()
         return self._layout
 
     @abstractmethod
