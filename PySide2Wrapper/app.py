@@ -24,3 +24,6 @@ class Application:
         """
         screen_geometry = self.__app.desktop().screenGeometry()
         return [screen_geometry.width(), screen_geometry.height()]
+
+    def get_instance(self):
+        return self.__app

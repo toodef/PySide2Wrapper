@@ -1,8 +1,8 @@
 import os
 
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
-    QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog, QLayout, QToolButton, QTabWidget, \
-    QWidget, QListWidget, QListWidgetItem, QGroupBox, QStackedLayout
+    QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog, QToolButton, QTabWidget, \
+    QWidget, QListWidget, QListWidgetItem, QGroupBox, QStackedLayout, QSplitter
 from PySide2.QtGui import QPixmap, QImage
 from PySide2.QtCore import QObject, Signal, QDir, Qt
 from abc import ABCMeta, abstractmethod
@@ -46,6 +46,7 @@ class Widget:
         self._state_saver = None
         self._layouts = [QVBoxLayout()]
         self._cur_tab_widget = None
+        self._cur_splitter = None
 
     def set_state_saver(self, saver: StateSaver):
         self._state_saver = saver
@@ -89,16 +90,19 @@ class Widget:
         self._enabled_dependencies.append(dependency)
         dependency.add_clicked_callback(self.set_enabled)
 
-    def add_widget(self, widget: "Widget instance", need_store=False):
+    def add_widget(self, widget: "Widget instance", need_store=False, need_stretch=True):
         """
         Add widget to window layout
         :param widget: Widget unit
         :param need_store: is need to store state  of specified widget
+        :param need_stretch: is need to insert stretch around widget
         :return: widget instance
         """
-        self.get_current_layout().addStretch()
+        if need_stretch:
+            self.get_current_layout().addStretch()
         self.get_current_layout().addLayout(widget.get_layout())
-        self.get_current_layout().addStretch()
+        if need_stretch:
+            self.get_current_layout().addStretch()
 
         if need_store and self._state_saver is not None:
             self._state_saver.add_widget(widget)
@@ -155,6 +159,17 @@ class Widget:
         self.start_vertical()
         self.add_widgets(widgets)
         self.cancel()
+
+    def start_splitter(self, orientation='vertical'):
+        self._cur_splitter = QSplitter()
+        self._cur_splitter.setOrientation(Qt.Orientation.Horizontal if orientation == 'horizontal' else Qt.Orientation.Vertical)
+        self.get_current_layout().addWidget(self._cur_splitter)
+
+    def add_splitter_space(self):
+        self._layouts.append(QVBoxLayout())
+        widget = QWidget()
+        widget.setLayout(self.get_current_layout())
+        self._cur_splitter.addWidget(widget)
 
     def get_current_layout(self):
         """
@@ -593,12 +608,15 @@ class ListWidget(Widget, ValueContains):
         self._layout.addWidget(self._instance)
         self.__items = []
 
+    def add_item(self, item: str, is_editable=True):
+        self.__items.append(QListWidgetItem(item, self._instance))
+        if is_editable:
+            self.__items[-1].setFlags(self.__items[-1].flags() | Qt.ItemIsEditable)
+        self._instance.addItem(self.__items[-1])
+
     def add_items(self, items: [str], is_editable=True) -> Widget:
         for item in items:
-            self.__items.append(QListWidgetItem(item, self._instance))
-            if is_editable:
-                self.__items[-1].setFlags(self.__items[-1].flags() | Qt.ItemIsEditable)
-            self._instance.addItem(self.__items[-1])
+            self.add_item(item, is_editable)
         return self
 
     def remove_item(self, idx: int):
@@ -606,7 +624,10 @@ class ListWidget(Widget, ValueContains):
         del self.__items[idx]
 
     def remove_current(self):
-        self.remove_item(self.__get_item_idx(self._instance.currentItem()))
+        self.remove_item(self.get_current_idx())
+
+    def get_current_idx(self):
+        return self.__get_item_idx(self._instance.currentItem())
 
     def clear(self):
         for i in range(len(self.__items)):
@@ -655,7 +676,7 @@ class DynamicView(Widget):
         del self.__widgets[idx]
 
     def clear(self):
-        for i in range(len(self.__widgets)):
+        for i in range(len(self.__widgets) - 1):
             self.remove_item(i)
 
     def set_index(self, idx: int):
