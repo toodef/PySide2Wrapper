@@ -3,7 +3,7 @@ import os
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
     QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog, QToolButton, QTabWidget, \
     QWidget, QListWidget, QListWidgetItem, QGroupBox, QStackedLayout, QSplitter
-from PySide2.QtGui import QPixmap, QImage
+from PySide2.QtGui import QPixmap, QImage, QDoubleValidator, QIntValidator, QRegExpValidator
 from PySide2.QtCore import QObject, Signal, QDir, Qt
 from abc import ABCMeta, abstractmethod
 
@@ -307,6 +307,26 @@ class ValueContains(metaclass=ABCMeta):
 class LineEdit(LabeledWidget, ValueContains):
     def __init__(self):
         super().__init__(QLineEdit())
+
+    def set_data_type(self, data_type: str, regexp: str = None):
+        """
+        Set data type? contains in LineEdit
+        :param data_type: type of data. String with possible values: {'int', 'double', 'regexp'}. If set 'regexp' type, need to define regexp parameter
+        :param regexp: regexp, that filter contain in LineEdit
+        :return: self instance
+        """
+        if data_type == 'int':
+            self._instance.setValidator(QIntValidator())
+        elif data_type == 'double':
+            self._instance.setValidator(QDoubleValidator())
+        elif data_type == 'regexp':
+            if regexp is None:
+                raise Exception("Regexp doesn't specified for LineEdit")
+            self._instance.setValidator(QRegExpValidator(regexp))
+        else:
+            raise Exception("Incorrect data_type parameter value: '{}' in LineEdit.set_data_type".format(data_type))
+
+        return self
 
     def set_value(self, value: str):
         """
