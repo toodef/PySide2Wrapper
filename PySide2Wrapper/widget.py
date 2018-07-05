@@ -518,10 +518,9 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         return None if len(res) < 1 else res
 
     def set_value(self, value):
-        value = os.path.abspath(value)
         if self.__line_edit is not None:
             self.__line_edit.set_value(value)
-        self.set_default_path(value)
+        self.set_default_path(os.path.dirname(value))
 
         for c in self.__value_changed_callbacks:
             c(value)
@@ -540,13 +539,13 @@ class PathDialog(Widget, ValueContains, metaclass=ABCMeta):
         self.set_value(res)
 
     @abstractmethod
-    def _call(self) -> str or None:
+    def _call(self) -> str:
         """
         Call dialog window
         :return: result path
         """
 
-    def call(self) -> str or None:
+    def call(self) -> str:
         path = self._call()
         if path is None or len(path) < 1:
             return None
