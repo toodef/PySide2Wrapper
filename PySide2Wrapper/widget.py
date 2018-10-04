@@ -884,3 +884,18 @@ class OpenGLWidget(Widget):
         self._instance.resizeGL = resize_callback
         self._instance.paintGL = draw_callback
 
+    def set_mouse_move_callback(self, callback: callable):
+        def with_update(event):
+            callback(event.pos().x(), event.pos().y())
+            self._instance.updateGL()
+        self._instance.mouseMoveEvent = with_update
+
+    def set_mouse_press_callback(self, callback: callable):
+        self._instance.mousePressEvent = lambda event: callback(event.pos().x(), event.pos().y(), event.buttons() == Qt.LeftButton, True)
+        self._instance.mouseReleaseEvent = lambda event: callback(event.pos().x(), event.pos().y(), event.buttons() == Qt.LeftButton, False)
+
+    def set_wheel_scroll_event(self, callback: callable):
+        def with_update(event):
+            callback(event.delta() // 120)
+            self._instance.updateGL()
+        self._instance.wheelEvent = lambda event: with_update(event)
