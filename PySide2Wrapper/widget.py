@@ -1,5 +1,6 @@
 import os
 
+from PySide2.QtOpenGL import QGLWidget
 from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QRadioButton, \
     QComboBox, QProgressBar, QTableWidget, QHeaderView, QTableWidgetItem, QFileDialog, QToolButton, QTabWidget, \
     QWidget, QListWidget, QListWidgetItem, QGroupBox, QStackedLayout, QSplitter, QGraphicsView, QGraphicsScene
@@ -555,7 +556,7 @@ class ImageLayout(Widget):
         return self
 
     def get_size(self):
-        return 0, 0 #self.__pixmap.width(), self.__pixmap.height()
+        return 0, 0  # self.__pixmap.width(), self.__pixmap.height()
 
 
 class CheckBox(Widget, Checkable):
@@ -872,3 +873,14 @@ class DynamicView(Widget):
 
     def set_index(self, idx: int):
         self.__stacked_layout.setCurrentIndex(idx)
+
+
+class OpenGLWidget(Widget):
+    def __init__(self, init_callback: callable, resize_callback: callable, draw_callback: callable):
+        super().__init__(QGLWidget())
+        self._layout.addWidget(self._instance)
+
+        self._instance.initializeGL = init_callback
+        self._instance.resizeGL = resize_callback
+        self._instance.paintGL = draw_callback
+
