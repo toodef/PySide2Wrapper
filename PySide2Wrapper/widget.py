@@ -1,3 +1,4 @@
+import math
 import os
 
 from PySide2.QtOpenGL import QGLWidget
@@ -896,6 +897,6 @@ class OpenGLWidget(Widget):
 
     def set_wheel_scroll_event(self, callback: callable):
         def with_update(event):
-            callback(event.delta() // 120)
+            callback(1 if event.delta() > 0 else -1)
             self._instance.updateGL()
         self._instance.wheelEvent = lambda event: with_update(event)
