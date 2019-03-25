@@ -7,6 +7,8 @@ from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPush
     QWidget, QListWidget, QListWidgetItem, QGroupBox, QStackedLayout, QSplitter, QGraphicsView, QGraphicsScene
 from PySide2.QtGui import QPixmap, QImage, QDoubleValidator, QIntValidator, QRegExpValidator, QPainterPath
 from PySide2.QtCore import QObject, Signal, QDir, Qt, QRectF
+from PySide2 import QtCore
+
 from abc import ABCMeta, abstractmethod
 
 from .utils import StateSaver
@@ -884,6 +886,8 @@ class OpenGLWidget(Widget):
         self._instance.initializeGL = init_callback
         self._instance.resizeGL = resize_callback
         self._instance.paintGL = draw_callback
+        self._instance.setFocusPolicy(Qt.StrongFocus)
+        self._key_buf = [False for _ in range(256)]
 
     def set_mouse_move_callback(self, callback: callable):
         def with_update(event):
@@ -900,3 +904,28 @@ class OpenGLWidget(Widget):
             callback(1 if event.delta() > 0 else -1)
             self._instance.updateGL()
         self._instance.wheelEvent = lambda event: with_update(event)
+
+    def set_keyboard_event(self, callback: callable):
+        def get_code(event):
+            code = event.key() + 32
+
+            if code < 0 or code > 255:
+                return None
+            return code
+
+        def on_press(event):
+            code = get_code(event)
+            if code is None:
+                return
+            self._key_buf[code] = True
+            callback(self._key_buf)
+            self._instance.updateGL()
+
+        def on_release(event):
+            code = get_code(event)
+            if code is None:
+                return
+            self._key_buf[code] = False
+
+        self._instance.keyPressEvent = on_press
+        self._instance.keyReleaseEvent = on_release
